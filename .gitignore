@@ -1,0 +1,22 @@
+# C/C++ build output
+*.o
+*.obj
+*.exe
+*.out
+*.elf
+*.hex
+*.bin
+*.map
+*.pdb
+*.ilk
+
+# Generated build directories
+build/
+Debug/
+Release/
+
+# Local IDE and OS files
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
