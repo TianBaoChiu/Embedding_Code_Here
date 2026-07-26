@@ -1,0 +1,131 @@
+/*
+ * 題目 01：ADC samples 超過 threshold 的計數
+ *
+ * 情境：
+ * 車用或機器人控制器收到一批 12-bit ADC samples，需要統計其中
+ * 有多少筆「嚴格大於」指定 threshold，供後續異常判斷使用。
+ *
+ * 請實作 adc_count_over_threshold()。
+ *
+ * I/O：
+ * - samples：唯讀的 ADC sample 陣列。
+ * - sample_count：陣列內的 sample 數量。
+ * - threshold：比較門檻，合法範圍為 0～4095。
+ * - out_count：成功時寫入超過 threshold 的數量。
+ *
+ * 回傳值：
+ * - ADC_COUNT_OK：成功。
+ * - ADC_COUNT_ERR_ARGUMENT：指標契約不合法。
+ * - ADC_COUNT_ERR_RANGE：threshold 超出 12-bit 範圍。
+ *
+ * 限制：
+ * 1. sample_count == 0 時，samples 可以是 NULL，成功時 *out_count 為 0。
+ * 2. sample_count > 0 時，samples 不可為 NULL。
+ * 3. out_count 不可為 NULL。
+ * 4. sample 等於 threshold 時不列入計數。
+ * 5. 發生任何錯誤時，不可修改 out_count 原有內容。
+ * 6. 題目假設 samples 由 ADC driver 保證在 0～4095，不需逐筆驗證範圍。
+ * 7. 只能掃描 samples 一次；時間 O(n)、額外空間 O(1)。
+ * 8. 不使用 global variable、動態記憶體或額外函式庫。
+ *
+ * 能力／職缺關聯：
+ * - C array、pointer、const、size_t、output parameter。
+ * - 韌體常見的 sensor threshold 與錯誤回傳設計。
+ *
+ * 提示：
+ * 1. 先處理不需要走訪陣列的參數條件。
+ * 2. 使用 local count，確認成功後再寫入 out_count。
+ *
+ * 反思題：
+ * 1. 約束與函式契約：
+ *    sample_count == 0 與 sample_count > 0 時，samples 的合法條件有何不同？
+ *    函式失敗時，out_count 為什麼不能被修改？
+ *
+ * 2. 邊界與失敗路徑：
+ *    threshold 分別為 0、4095，或 sample 剛好等於 threshold 時，
+ *    哪些 sample 應被計數？out_count == NULL 時應發生什麼事？
+ *
+ * 3. 常見變形與韌體情境：
+ *    如果 ADC samples 不再一次傳入陣列，而是由 ISR 每次送入一筆，
+ *    這個函式的 API 與計數狀態應如何調整？
+ */
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define ADC_MAX_VALUE UINT16_C(4095)
+
+enum
+{
+    ADC_COUNT_OK = 0,
+    ADC_COUNT_ERR_ARGUMENT = -1,
+    ADC_COUNT_ERR_RANGE = -2
+};
+
+static int adc_count_over_threshold(const uint16_t *samples,
+                                    size_t sample_count,
+                                    uint16_t threshold,
+                                    size_t *out_count)
+{
+    (void)samples;
+    (void)sample_count;
+    (void)threshold;
+    (void)out_count;
+
+    /* TODO: 在此實作 */
+
+    return ADC_COUNT_ERR_ARGUMENT;
+}
+
+static void test_normal_samples(void)
+{
+    const uint16_t samples[] = { 0U, 1000U, 2048U, 2049U, 4095U };
+    size_t count = 99U;
+
+    assert(adc_count_over_threshold(samples, 5U, 2048U, &count)
+           == ADC_COUNT_OK);
+    assert(count == 2U);
+}
+
+static void test_equal_threshold_is_not_counted(void)
+{
+    const uint16_t samples[] = { 100U, 100U, 100U };
+    size_t count = 99U;
+
+    assert(adc_count_over_threshold(samples, 3U, 100U, &count)
+           == ADC_COUNT_OK);
+    assert(count == 0U);
+}
+
+static void test_empty_samples(void)
+{
+    size_t count = 99U;
+
+    assert(adc_count_over_threshold(NULL, 0U, 2048U, &count)
+           == ADC_COUNT_OK);
+    assert(count == 0U);
+}
+
+static void test_invalid_input_keeps_output_unchanged(void)
+{
+    size_t count = 99U;
+
+    assert(adc_count_over_threshold(NULL, 1U, 2048U, &count)
+           == ADC_COUNT_ERR_ARGUMENT);
+    assert(count == 99U);
+
+    assert(adc_count_over_threshold(NULL, 0U, 4096U, &count)
+           == ADC_COUNT_ERR_RANGE);
+    assert(count == 99U);
+}
+
+int main(void)
+{
+    test_normal_samples();
+    test_equal_threshold_is_not_counted();
+    test_empty_samples();
+    test_invalid_input_keeps_output_unchanged();
+
+    return 0;
+}
