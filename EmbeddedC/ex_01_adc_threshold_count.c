@@ -68,14 +68,35 @@ static int adc_count_over_threshold(const uint16_t *samples,
                                     uint16_t threshold,
                                     size_t *out_count)
 {
-    (void)samples;
-    (void)sample_count;
-    (void)threshold;
-    (void)out_count;
-
     /* TODO: 在此實作 */
+    
+    if(threshold > ADC_MAX_VALUE)
+        return ADC_COUNT_ERR_RANGE;
+    
+    if(sample_count == 0U && samples == NULL)
+    {
+        *out_count = 0U;
+        return ADC_COUNT_OK;
+    }
+    else if(sample_count !=  0 && samples == NULL)
+        return ADC_COUNT_ERR_ARGUMENT;
+        
+    size_t temp_count = 0;
+    
+    for(int i = 0; i < sample_count; i++)
+    {
+        if(*samples > ADC_MAX_VALUE)
+            return ADC_COUNT_ERR_RANGE;
+            
+            
+        if(*samples > threshold)
+            temp_count++;
+        samples++;
+    }
 
-    return ADC_COUNT_ERR_ARGUMENT;
+
+    *out_count = temp_count;
+    return ADC_COUNT_OK;
 }
 
 static void test_normal_samples(void)
