@@ -40,14 +40,22 @@
  * 1. 約束與函式契約：
  *    sample_count == 0 與 sample_count > 0 時，samples 的合法條件有何不同？
  *    函式失敗時，out_count 為什麼不能被修改？
+ *      ->sample_count == 0 時，代表當前傳入的陣列大小是0，所以如果陣列是空是可預期的，但是當sample_count >0時卻又收到空的指標陣列，那就是有問題，主要就是差在陣列是否可以為空
+ *      ->失敗時還去修改out_count，只會讓out_count變成一個錯誤且不可預期的數值，會造成後續使用out_count的功能產生錯誤或異常
  *
  * 2. 邊界與失敗路徑：
  *    threshold 分別為 0、4095，或 sample 剛好等於 threshold 時，
  *    哪些 sample 應被計數？out_count == NULL 時應發生什麼事？
+ *      ->sample就算剛好等於閥值也不該被記錄，因為規定是要大於threshold
+ *      ->我們對於threshold的限制有不可以大於4095，所以當threshold是4095時，便不會有任何sample元素大於他
+ *      ->threshold等於0時，能夠採計的就是1-4095
+ *      ->out_count如果是NULL，那應該要回傳Argument錯誤，因為我們預期out_count是一個有確實指向東西的指針，才能讓我們紀錄所需要的資訊
  *
  * 3. 常見變形與韌體情境：
  *    如果 ADC samples 不再一次傳入陣列，而是由 ISR 每次送入一筆，
  *    這個函式的 API 與計數狀態應如何調整？
+ *      ->我預期先移除迴圈或for迴圈，另外應該就不需要sample_count了，因為都會是1
+ *      ->但因為ISR每次都只有送入一筆，會建議透過其他方式來儲存計數，，可以在caller或driver context去導入計數功能
  */
 
 #include <assert.h>
@@ -72,21 +80,24 @@ static int adc_count_over_threshold(const uint16_t *samples,
     
     if(threshold > ADC_MAX_VALUE)
         return ADC_COUNT_ERR_RANGE;
+    else if(out_count == NULL)
+        return ADC_COUNT_ERR_ARGUMENT;
+    
     
     if(sample_count == 0U && samples == NULL)
     {
         *out_count = 0U;
         return ADC_COUNT_OK;
     }
-    else if(sample_count !=  0 && samples == NULL)
+    else if(sample_count != 0U && samples == NULL)
         return ADC_COUNT_ERR_ARGUMENT;
         
     size_t temp_count = 0;
     
-    for(int i = 0; i < sample_count; i++)
+    for(size_t i = 0; i < sample_count; i++)
     {
-        if(*samples > ADC_MAX_VALUE)
-            return ADC_COUNT_ERR_RANGE;
+        // if(*samples > ADC_MAX_VALUE)
+        //     return ADC_COUNT_ERR_RANGE;
             
             
         if(*samples > threshold)
