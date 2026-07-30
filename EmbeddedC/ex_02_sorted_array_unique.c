@@ -44,24 +44,26 @@
  * 反思題：
  * 1. 約束與函式契約：
  *    為什麼「輸入已排序」很重要？成功後陣列的哪個範圍才是有效結果？
- *      ->我覺得我目前的實現，就算輸入未排序也沒關係，成功後的陣列應該要看實際上被算到的第一次的數字數量，所以超過這個數字的範圍就可以視為無效範圍
+ *      ->透過雙指標，如果是已排序的數列，可以有效移動單一指標，取尋找有無重複過的數字
+ *      ->在out_unique_count-1內的範圍，才是有效結果
  *
  * 2. 邊界與失敗路徑：
  *    空陣列、單一元素、全部相同、完全沒有重複時，各自應得到什麼結果？
  *    發生參數錯誤時，為什麼不能先修改 values？
- *      ->空陣列要看預期count是否為0，是的話就代表直接回傳數量0，然後回傳陣列依然是空陣列、單一元素和全部相同的結果一樣，計數都是1，完全沒重複的話，修改後的陣列有效範圍就是等於原始陣列大小，計數數量會剛好等於原始陣列大小
- *      -> 不可以先修改，因為會把原始陣列改壞，變成一堆無用的數值，因此我們需要先給一個temp的陣列，確定都OK後才能把temp陣列內的元素給回去原本陣列
+ *      ->空陣列的話，那回傳的陣列也會是空的，單一元素跟全部相同的結果會一樣，結果只會收到一個長度為1的陣列，完全沒有重複的話，那回傳的陣列結果將會是等於原先輸入的陣列，其實就是會跟原先輸入一模一樣
+ *      ->錯誤的參數本來就是不該發生的，如果還強硬去修改values，這是不合理的。
  *
  * 3. 常見變形與韌體情境：
  *    若 values 來自不可修改的 const／DMA buffer，API 應如何改成使用
  *    輸出 buffer？需要增加哪個參數才能避免寫出界？
- *      ->values進來後需要先用一個新的temp儲存起來，不動到原本的資料
+ *      ->建立一個輸出buffer，把合法結果寫回到該輸出buffer上
 *       ->輸出的buffer需要限制最多寫到原先values的大小，不可以再多
  */
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 enum
 {
@@ -73,11 +75,10 @@ static int array_unique_sorted(uint16_t *values,
                                size_t value_count,
                                size_t *out_unique_count)
 {
-    
     if(out_unique_count == NULL)
         return ARRAY_UNIQUE_ERR_ARGUMENT;
     
-    if(values == NULL && value_count == 0)
+    if(value_count == 0)
     {
         *out_unique_count = 0;
         return ARRAY_UNIQUE_OK;
@@ -87,33 +88,23 @@ static int array_unique_sorted(uint16_t *values,
         return ARRAY_UNIQUE_ERR_ARGUMENT;
     }
     
-    
-    uint16_t check_value = 0;
-    uint16_t current_val;
-    uint16_t temp_array[value_count] = {};
-    
-    *out_unique_count = 0;
-    
-    for(size_t i = 0; i < value_count; i++)
+    uint16_t *p1 = values;
+    uint16_t *p2 = values;
+    *out_unique_count = 1;
+
+    p2++;
+    for(size_t i = 1; i < value_count; i++)
     {
-        current_val = values[i];
-        
-        if((check_value & current_val) != current_val)
+        if(*p1 != *p2)
         {
-            
-            check_value |= current_val;
-            temp_array[*out_unique_count] = current_val;
-            *out_unique_count+=1;
+            p1++;
+            *p1 = *p2;
+            *out_unique_count = *out_unique_count + 1;
         }
+        p2++;
     }
-   
-    
-    for(size_t j = 0; j < *out_unique_count; j++)
-    {
-        values[j] = temp_array[j];
-    }
-    
     return ARRAY_UNIQUE_OK;
+
 }
 
 static void test_repeated_values(void)
