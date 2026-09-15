@@ -15,11 +15,20 @@ typedef struct
 
 int push_ring_buffer(Ring_Buffer * buffer, uint8_t data);
 int  pop_ring_buffer(Ring_Buffer * buffer, uint8_t *temp);
+uint8_t ring_buffer_available(Ring_Buffer *buffer);
+
+int is_full(Ring_Buffer *buffer);
+int is_empty(Ring_Buffer *buffer);
+
 
 int main()
 {
-    uint8_t state = 0;
-    uint8_t rx_buffer[] = {'A','B', 'C','D','E', 'F'};
+    int state = 0;
+    uint8_t rx_buffer[] =
+    {
+        'A','B','C','D',
+        'E','F','G','H','I'
+    };
     Ring_Buffer buffer = {0};
     
     //假設USART傳入'A'
@@ -31,9 +40,12 @@ int main()
         if(state == 0)
         {
             printf("Push success\n");
-
-            printf("head = %d\n", buffer.head);
-            printf("data = %c\n", buffer.ring_buffer[i]);
+            
+            printf("push data = %c\n", rx_buffer[i]);
+            
+            printf("head = %d, tail = %d\n",
+                   buffer.head,
+                   buffer.tail);
         }
         else
         {
@@ -51,8 +63,15 @@ int main()
         if(state == 0)
         {
             printf("Pop success\n");
-            printf("pop data is %c\n", temp);
+            printf("pop data %c\n", temp);
+            printf("head = %d, tail = %d\n",
+                   buffer.head,
+                   buffer.tail);
 
+        }
+        else
+        {
+            printf("Pop Fail\n");
         }
     }
 
@@ -64,9 +83,12 @@ int main()
         if(state == 0)
         {
             printf("Push success\n");
-
-            printf("head = %d\n", buffer.head);
-            printf("data = %c\n", buffer.ring_buffer[k]);
+            
+            printf("push data = %c\n", rx_buffer[k]);
+            
+            printf("head = %d, tail = %d\n",
+                   buffer.head,
+                   buffer.tail);
         }
         else
         {
@@ -74,6 +96,9 @@ int main()
             break;
         }
     }
+
+    printf("available = %d\n",
+       ring_buffer_available(&buffer));
 
     return 0;
 }
@@ -85,12 +110,14 @@ int push_ring_buffer(Ring_Buffer * buffer, uint8_t data)
         printf("Invalid buffer pointer\n");
         return -1;
     }
-
-    if((buffer->head + 1 ) % RING_BUFFER_SIZE == buffer->tail)
+    
+    if(is_full(buffer))
     {
         printf("Ring Buffer is Full\n");
         return -1;
     }
+    
+    printf("Push Index is %d\n", buffer->head);
 
     buffer->ring_buffer[buffer->head] = data;
     buffer->head = (buffer->head + 1) % RING_BUFFER_SIZE;
@@ -106,12 +133,11 @@ int  pop_ring_buffer(Ring_Buffer * buffer, uint8_t * temp)
         return -1;
     }
 
-    if(buffer->tail == buffer->head)
+    if(is_empty(buffer))
     {
-        printf("Buffer in Empry\n");
+        printf("Ring Buffer is Empty\n");
         return -1;
     }
-
     
     *temp = buffer->ring_buffer[buffer->tail];
 
@@ -119,4 +145,43 @@ int  pop_ring_buffer(Ring_Buffer * buffer, uint8_t * temp)
 
     return 0;
 
+}
+
+uint8_t ring_buffer_available(Ring_Buffer *buffer)
+{
+    
+    if(buffer == NULL)
+    {
+        return 0;
+    }
+
+    return (buffer->head
+            - buffer->tail
+            + RING_BUFFER_SIZE)
+            % RING_BUFFER_SIZE;
+    
+    
+}
+
+
+int is_full(Ring_Buffer *buffer)
+{
+    
+    if(buffer == NULL)
+    {
+        return 0;
+    }
+    
+    return  (buffer->head + 1 ) % RING_BUFFER_SIZE == buffer->tail;
+}
+
+int is_empty(Ring_Buffer *buffer)
+{
+    
+    if(buffer == NULL)
+    {
+        return 0;
+    }
+    
+    return ring_buffer_available(buffer) == 0;
 }
