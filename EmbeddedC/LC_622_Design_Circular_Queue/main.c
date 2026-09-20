@@ -22,48 +22,89 @@ typedef struct
 
 bool circular_queue_init(CircularQueue *queue, size_t capacity)
 {
-    (void)queue;
-    (void)capacity;
-    return false;
+
+    if(queue == NULL ||capacity == 0 || capacity > CIRCULAR_QUEUE_MAX_CAPACITY )
+        return false;
+
+    queue->capacity = capacity;
+    queue->head = 0;
+    queue->tail = 0;
+    queue->count = 0;
+    
+
+    return true;
 }
 
 bool circular_queue_enqueue(CircularQueue *queue, int32_t value)
 {
-    (void)queue;
-    (void)value;
-    return false;
+
+    if(queue == NULL || queue->capacity == 0)
+        return false;
+
+    if(queue -> count == queue -> capacity)
+        return false;
+
+   queue->data[queue->tail] = value;
+   queue->tail = (queue->tail + 1) % queue->capacity;
+   queue->count++;
+    
+   return true;
 }
 
 bool circular_queue_dequeue(CircularQueue *queue)
 {
-    (void)queue;
-    return false;
+    if(queue == NULL || queue->capacity == 0)
+        return false;
+
+    if(queue->count == 0)
+        return false;
+
+    queue->head = (queue->head +1) % queue->capacity;
+    queue->count--;
+
+    return true;
 }
 
 bool circular_queue_front(const CircularQueue *queue, int32_t *out_value)
 {
-    (void)queue;
-    (void)out_value;
-    return false;
+   if(queue == NULL || queue->capacity == 0 || out_value == NULL)
+        return false;
+
+    if(queue->count == 0)
+        return false;
+
+    *out_value = queue->data[queue->head];
+
+    return true;
 }
 
 bool circular_queue_rear(const CircularQueue *queue, int32_t *out_value)
 {
-    (void)queue;
-    (void)out_value;
-    return false;
+    if(queue == NULL || queue->capacity == 0 || out_value == NULL)
+        return false;
+
+    if(queue->count == 0)
+        return false;
+
+    *out_value = queue->data[(queue->tail + queue->capacity - 1) % queue->capacity];
+
+    return true;
 }
 
 bool circular_queue_is_empty(const CircularQueue *queue)
 {
-    (void)queue;
-    return false;
+    if(queue == NULL)
+        return false;
+
+    return(queue->count == 0);
 }
 
 bool circular_queue_is_full(const CircularQueue *queue)
 {
-    (void)queue;
-    return false;
+    if(queue == NULL)
+        return false;
+
+    return(queue->count == queue->capacity);
 }
 
 static void test_leetcode_example(void)
