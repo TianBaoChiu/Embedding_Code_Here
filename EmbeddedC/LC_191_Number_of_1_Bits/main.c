@@ -5,8 +5,15 @@
 uint8_t count_set_bits_u32(uint32_t value)
 {
     /* TODO: 回傳 value 中值為 1 的 bit 數量。 */
-    (void)value;
-    return 0U;
+    uint8_t count = 0;
+
+    for(uint8_t i = 0; i < 32 ; i++)
+    {
+        if(value & 0x1)
+            count ++;
+        value = value >> 1;
+    }
+    return count;
 }
 
 static void test_zero(void)
